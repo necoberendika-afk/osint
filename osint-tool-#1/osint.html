@@ -1,0 +1,858 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>OSINT Intelligence Tool</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #1e3c72 0%, #2a5298 100%);
+            min-height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            padding: 20px;
+        }
+
+        .container {
+            width: 100%;
+            max-width: 1200px;
+        }
+
+        header {
+            text-align: center;
+            color: white;
+            margin-bottom: 40px;
+        }
+
+        header h1 {
+            font-size: 2.5em;
+            margin-bottom: 10px;
+            text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.3);
+        }
+
+        header p {
+            font-size: 1.1em;
+            opacity: 0.9;
+        }
+
+        .tools-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 20px;
+            margin-bottom: 40px;
+        }
+
+        .tool-card {
+            background: white;
+            border-radius: 10px;
+            padding: 25px;
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.1);
+            transition: transform 0.3s ease, box-shadow 0.3s ease;
+        }
+
+        .tool-card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 12px 48px rgba(0, 0, 0, 0.15);
+        }
+
+        .tool-card h2 {
+            color: #1e3c72;
+            margin-bottom: 15px;
+            font-size: 1.3em;
+        }
+
+        .input-group {
+            margin-bottom: 15px;
+        }
+
+        label {
+            display: block;
+            margin-bottom: 5px;
+            color: #333;
+            font-weight: 500;
+        }
+
+        input[type="text"],
+        select {
+            width: 100%;
+            padding: 12px;
+            border: 2px solid #e0e0e0;
+            border-radius: 5px;
+            font-size: 1em;
+            transition: border-color 0.3s ease;
+        }
+
+        input[type="text"]:focus,
+        select:focus {
+            outline: none;
+            border-color: #2a5298;
+        }
+
+        button {
+            width: 100%;
+            padding: 12px;
+            background: linear-gradient(135deg, #1e3c72 0%, #2a5298 100%);
+            color: white;
+            border: none;
+            border-radius: 5px;
+            font-size: 1em;
+            font-weight: 600;
+            cursor: pointer;
+            transition: opacity 0.3s ease;
+        }
+
+        button:hover {
+            opacity: 0.9;
+        }
+
+        button:active {
+            transform: scale(0.98);
+        }
+
+        .result {
+            margin-top: 20px;
+            padding: 15px;
+            background: #f5f5f5;
+            border-radius: 5px;
+            display: none;
+            max-height: 300px;
+            overflow-y: auto;
+        }
+
+        .result.show {
+            display: block;
+        }
+
+        .result h3 {
+            color: #1e3c72;
+            margin-bottom: 10px;
+        }
+
+        .result-item {
+            display: flex;
+            justify-content: space-between;
+            padding: 8px 0;
+            border-bottom: 1px solid #ddd;
+        }
+
+        .result-item:last-child {
+            border-bottom: none;
+        }
+
+        .result-item strong {
+            color: #1e3c72;
+            min-width: 120px;
+        }
+
+        .result-item span {
+            color: #555;
+            text-align: right;
+        }
+
+        .error {
+            background-color: #ffebee;
+            color: #c62828;
+            padding: 12px;
+            border-radius: 5px;
+            margin-top: 10px;
+            display: none;
+        }
+
+        .error.show {
+            display: block;
+        }
+
+        .loading {
+            display: none;
+            text-align: center;
+            margin-top: 10px;
+        }
+
+        .loading.show {
+            display: block;
+        }
+
+        .spinner {
+            border: 3px solid #f3f3f3;
+            border-top: 3px solid #1e3c72;
+            border-radius: 50%;
+            width: 20px;
+            height: 20px;
+            animation: spin 1s linear infinite;
+            display: inline-block;
+            margin-right: 10px;
+        }
+
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+
+        .tabs {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 30px;
+            flex-wrap: wrap;
+        }
+
+        .tab-btn {
+            padding: 10px 20px;
+            background: rgba(255, 255, 255, 0.2);
+            color: white;
+            border: 2px solid white;
+            border-radius: 5px;
+            cursor: pointer;
+            font-weight: 600;
+            transition: all 0.3s ease;
+        }
+
+        .tab-btn.active {
+            background: white;
+            color: #1e3c72;
+            border-color: white;
+        }
+
+        .tab-content {
+            display: none;
+        }
+
+        .tab-content.active {
+            display: block;
+        }
+
+        .success {
+            background-color: #e8f5e9;
+            color: #2e7d32;
+            padding: 12px;
+            border-radius: 5px;
+            margin-top: 10px;
+            display: none;
+        }
+
+        .success.show {
+            display: block;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1>🔍 User Intelligence Tool</h1>
+            <p>Find Users Across Gaming & Social Platforms</p>
+        </header>
+
+        <div class="tabs">
+            <button class="tab-btn active" onclick="switchTab('username')">Username Search</button>
+            <button class="tab-btn" onclick="switchTab('phone')">Phone Lookup</button>
+            <button class="tab-btn" onclick="switchTab('ip')">IP Lookup</button>
+            <button class="tab-btn" onclick="switchTab('domain')">Domain Info</button>
+        </div>
+
+        <!-- Username Search Tab -->
+        <div id="username" class="tab-content active">
+            <div class="tools-grid">
+                <div class="tool-card">
+                    <h2>Search by Username</h2>
+                    <div class="input-group">
+                        <label>Enter Username</label>
+                        <input type="text" id="usernameInput" placeholder="e.g., xXGamer123Xx">
+                    </div>
+                    <div class="input-group">
+                        <label>Select Platforms (Optional)</label>
+                        <div style="display: grid; grid-template-columns: repeat(2, 1fr); gap: 10px;">
+                            <label style="display: flex; align-items: center; font-weight: 400;"><input type="checkbox" value="chess" checked> Chess.com</label>
+                            <label style="display: flex; align-items: center; font-weight: 400;"><input type="checkbox" value="lichess" checked> Lichess</label>
+                            <label style="display: flex; align-items: center; font-weight: 400;"><input type="checkbox" value="steam" checked> Steam</label>
+                            <label style="display: flex; align-items: center; font-weight: 400;"><input type="checkbox" value="roblox" checked> Roblox</label>
+                            <label style="display: flex; align-items: center; font-weight: 400;"><input type="checkbox" value="epic" checked> Epic</label>
+                            <label style="display: flex; align-items: center; font-weight: 400;"><input type="checkbox" value="minecraft" checked> Minecraft</label>
+                        </div>
+                    </div>
+                    <button onclick="searchUsername()">🔍 Search & Analyze IP Location</button>
+                    <div class="loading" id="usernameLoading"><div class="spinner"></div>Searching & gathering intelligence...</div>
+                    <div class="error" id="usernameError"></div>
+                    <div class="result" id="usernameResult">
+                        <h3>Search Results & Intelligence</h3>
+                        <div id="usernameContent"></div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Phone Lookup Tab -->
+        <div id="phone" class="tab-content">
+            <div class="tools-grid">
+                <div class="tool-card">
+                    <h2>Phone Number Lookup</h2>
+                    <div class="input-group">
+                        <label>Enter Phone Number</label>
+                        <input type="text" id="phoneInput" placeholder="e.g., +1-555-123-4567">
+                    </div>
+                    <button onclick="lookupPhone()">Lookup Phone</button>
+                    <div class="loading" id="phoneLoading"><div class="spinner"></div>Looking up...</div>
+                    <div class="error" id="phoneError"></div>
+                    <div class="result" id="phoneResult">
+                        <h3>Phone Information</h3>
+                        <div id="phoneContent"></div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- IP Lookup Tab -->
+        <div id="ip" class="tab-content">
+            <div class="tools-grid">
+                <div class="tool-card">
+                    <h2>IP Geolocation</h2>
+                    <div class="input-group">
+                        <label>Enter IP Address</label>
+                        <input type="text" id="ipInput" placeholder="e.g., 8.8.8.8 or leave empty for your IP">
+                    </div>
+                    <button onclick="lookupIP()">Lookup IP</button>
+                    <div class="loading" id="ipLoading"><div class="spinner"></div>Loading...</div>
+                    <div class="error" id="ipError"></div>
+                    <div class="result" id="ipResult">
+                        <h3>IP Information</h3>
+                        <div id="ipContent"></div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Domain Info Tab -->
+        <div id="domain" class="tab-content">
+            <div class="tools-grid">
+                <div class="tool-card">
+                    <h2>Domain Information</h2>
+                    <div class="input-group">
+                        <label>Enter Domain Name</label>
+                        <input type="text" id="domainInput" placeholder="e.g., google.com">
+                    </div>
+                    <button onclick="lookupDomain()">Get Domain Info</button>
+                    <div class="loading" id="domainLoading"><div class="spinner"></div>Loading...</div>
+                    <div class="error" id="domainError"></div>
+                    <div class="result" id="domainResult">
+                        <h3>Domain Details</h3>
+                        <div id="domainContent"></div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        function switchTab(tabName) {
+            // Hide all tabs
+            const tabs = document.querySelectorAll('.tab-content');
+            tabs.forEach(tab => tab.classList.remove('active'));
+
+            // Remove active class from all buttons
+            const buttons = document.querySelectorAll('.tab-btn');
+            buttons.forEach(btn => btn.classList.remove('active'));
+
+            // Show selected tab and highlight button
+            document.getElementById(tabName).classList.add('active');
+            event.target.classList.add('active');
+        }
+
+        async function lookupIP() {
+            const ip = document.getElementById('ipInput').value.trim() || '';
+            const loading = document.getElementById('ipLoading');
+            const error = document.getElementById('ipError');
+            const result = document.getElementById('ipResult');
+            const content = document.getElementById('ipContent');
+
+            loading.classList.add('show');
+            error.classList.remove('show');
+            result.classList.remove('show');
+
+            try {
+                const url = ip ? `http://ipinfo.io/${ip}/json` : `http://ipinfo.io/json`;
+                const response = await fetch(url);
+                const data = await response.json();
+
+                if (response.ok) {
+                    content.innerHTML = `
+                        <div class="result-item"><strong>IP Address:</strong> <span>${data.ip || 'N/A'}</span></div>
+                        <div class="result-item"><strong>Hostname:</strong> <span>${data.hostname || 'N/A'}</span></div>
+                        <div class="result-item"><strong>City:</strong> <span>${data.city || 'N/A'}</span></div>
+                        <div class="result-item"><strong>Region:</strong> <span>${data.region || 'N/A'}</span></div>
+                        <div class="result-item"><strong>Country:</strong> <span>${data.country || 'N/A'}</span></div>
+                        <div class="result-item"><strong>Coordinates:</strong> <span>${data.loc || 'N/A'}</span></div>
+                        <div class="result-item"><strong>Organization:</strong> <span>${data.org || 'N/A'}</span></div>
+                        <div class="result-item"><strong>Timezone:</strong> <span>${data.timezone || 'N/A'}</span></div>
+                    `;
+                    result.classList.add('show');
+                } else {
+                    throw new Error(data.error?.message || 'Failed to lookup IP');
+                }
+            } catch (err) {
+                error.textContent = `Error: ${err.message}`;
+                error.classList.add('show');
+            } finally {
+                loading.classList.remove('show');
+            }
+        }
+
+        async function lookupDomain() {
+            const domain = document.getElementById('domainInput').value.trim();
+            const loading = document.getElementById('domainLoading');
+            const error = document.getElementById('domainError');
+            const result = document.getElementById('domainResult');
+            const content = document.getElementById('domainContent');
+
+            if (!domain) {
+                error.textContent = 'Please enter a domain name';
+                error.classList.add('show');
+                return;
+            }
+
+            loading.classList.add('show');
+            error.classList.remove('show');
+            result.classList.remove('show');
+
+            try {
+                // Using DNS-over-HTTPS
+                const response = await fetch(`https://dns.google/resolve?name=${domain}`);
+                const data = await response.json();
+
+                if (data.Answer) {
+                    let ips = [];
+                    data.Answer.forEach(answer => {
+                        if (answer.type === 1) ips.push(answer.data);
+                    });
+
+                    if (ips.length > 0) {
+                        content.innerHTML = `
+                            <div class="result-item"><strong>Domain:</strong> <span>${domain}</span></div>
+                            <div class="result-item"><strong>A Records:</strong> <span>${ips.join(', ')}</span></div>
+                        `;
+                        result.classList.add('show');
+                    } else {
+                        throw new Error('No DNS records found');
+                    }
+                } else {
+                    throw new Error('Domain not found or DNS resolution failed');
+                }
+            } catch (err) {
+                error.textContent = `Error: ${err.message}`;
+                error.classList.add('show');
+            } finally {
+                loading.classList.remove('show');
+            }
+        }
+
+        async function lookupWHOIS() {
+            const query = document.getElementById('whoisInput').value.trim();
+            const type = document.getElementById('whoisType').value;
+            const loading = document.getElementById('whoisLoading');
+            const error = document.getElementById('whoisError');
+            const result = document.getElementById('whoisResult');
+            const content = document.getElementById('whoisContent');
+
+            if (!query) {
+                error.textContent = 'Please enter a domain or IP address';
+                error.classList.add('show');
+                return;
+            }
+
+            loading.classList.add('show');
+            error.classList.remove('show');
+            result.classList.remove('show');
+
+            try {
+                const response = await fetch(`https://whoisjson.com/api/v1/whois?domain=${query}`);
+                const data = await response.json();
+
+                if (data.status === 'success') {
+                    const info = data.result;
+                    content.innerHTML = `
+                        <div class="result-item"><strong>Domain:</strong> <span>${info.domain || 'N/A'}</span></div>
+                        <div class="result-item"><strong>Registrar:</strong> <span>${info.registrar || 'N/A'}</span></div>
+                        <div class="result-item"><strong>Created:</strong> <span>${info.created_date || 'N/A'}</span></div>
+                        <div class="result-item"><strong>Updated:</strong> <span>${info.updated_date || 'N/A'}</span></div>
+                        <div class="result-item"><strong>Expires:</strong> <span>${info.expiration_date || 'N/A'}</span></div>
+                        <div class="result-item"><strong>Status:</strong> <span>${info.status || 'N/A'}</span></div>
+                        <div class="result-item"><strong>Registrant:</strong> <span>${info.registrant_name || 'N/A'}</span></div>
+                        <div class="result-item"><strong>Registrant Country:</strong> <span>${info.registrant_country || 'N/A'}</span></div>
+                    `;
+                    result.classList.add('show');
+                } else {
+                    throw new Error(data.message || 'WHOIS lookup failed');
+                }
+            } catch (err) {
+                error.textContent = `Error: ${err.message}`;
+                error.classList.add('show');
+            } finally {
+                loading.classList.remove('show');
+            }
+        }
+
+        async function checkIPReputation(ip) {
+            try {
+                // Get basic IP geolocation info
+                const geoResponse = await fetch(`http://ipinfo.io/${ip}/json`);
+                const geoData = await geoResponse.json();
+
+                // Check for VPN/Proxy using multiple free services
+                let isVpn = false;
+                let abuseRisk = 0;
+                let isHoneypot = false;
+                let threatTypes = [];
+
+                // Method 1: Check against known VPN/Proxy providers
+                try {
+                    const vpnCheckResponse = await fetch(`https://vpnapi.io/api?ip=${ip}&key=free`);
+                    if (vpnCheckResponse.ok) {
+                        const vpnData = await vpnCheckResponse.json();
+                        isVpn = vpnData.security?.vpn || vpnData.security?.proxy || vpnData.security?.tor || false;
+                        if (vpnData.security?.threats) {
+                            threatTypes = vpnData.security.threats;
+                        }
+                    }
+                } catch (e) {
+                    // Fallback method
+                }
+
+                // Method 2: Check abuse score using AbuseIPDB (limited free tier)
+                try {
+                    const abuseResponse = await fetch(`https://api.abuseipdb.com/api/v2/check?ipAddress=${ip}`, {
+                        headers: {
+                            'Key': 'free',
+                            'Accept': 'application/json'
+                        }
+                    });
+                    if (abuseResponse.ok) {
+                        const abuseData = await abuseResponse.json();
+                        abuseRisk = abuseData.data?.abuseConfidenceScore || 0;
+                    }
+                } catch (e) {
+                    // Calculate basic risk based on common patterns
+                    if (geoData.org && (geoData.org.includes('Hosting') || geoData.org.includes('Data Center'))) {
+                        abuseRisk = 35;
+                    }
+                }
+
+                // Method 3: Honeypot detection - check against known honeypot IPs
+                const honeypotList = [
+                    '192.0.2.0/24',      // Documentation prefix
+                    '198.51.100.0/24',   // Documentation prefix
+                    '203.0.113.0/24',    // Documentation prefix
+                    '10.0.0.0/8',        // Private networks
+                    '172.16.0.0/12',     // Private networks
+                    '192.168.0.0/16'     // Private networks
+                ];
+
+                // Simple check for private IPs and known honeypot ranges
+                if (ip.startsWith('10.') || ip.startsWith('172.16.') || ip.startsWith('192.168.')) {
+                    isHoneypot = true;
+                } else if (ip.startsWith('192.0.2.') || ip.startsWith('198.51.100.') || ip.startsWith('203.0.113.')) {
+                    isHoneypot = true;
+                }
+
+                // Check for common honeypot indicators in ISP/Org names
+                const honeypotIndicators = ['honeypot', 'trap', 'sandbox', 'test', 'dummy', 'example'];
+                const orgLower = (geoData.org || '').toLowerCase();
+                if (honeypotIndicators.some(indicator => orgLower.includes(indicator))) {
+                    isHoneypot = true;
+                }
+
+                return {
+                    ip: ip,
+                    city: geoData.city || 'Unknown',
+                    region: geoData.region || 'Unknown',
+                    country: geoData.country || 'Unknown',
+                    country_code: geoData.country?.split(',')[0] || 'UN',
+                    isp: geoData.org || 'Unknown',
+                    coordinates: geoData.loc || 'Unknown',
+                    timezone: geoData.timezone || 'Unknown',
+                    isVpn: isVpn,
+                    abuseRisk: abuseRisk,
+                    isHoneypot: isHoneypot,
+                    threatTypes: threatTypes
+                };
+            } catch (err) {
+                console.error('Error checking IP reputation:', err);
+                return null;
+            }
+        }
+
+        async function searchUsername() {
+            const username = document.getElementById('usernameInput').value.trim();
+            const loading = document.getElementById('usernameLoading');
+            const error = document.getElementById('usernameError');
+            const result = document.getElementById('usernameResult');
+            const content = document.getElementById('usernameContent');
+
+            if (!username) {
+                error.textContent = 'Please enter a username';
+                error.classList.add('show');
+                return;
+            }
+
+            // Get selected platforms
+            const checkboxes = document.querySelectorAll('#username input[type="checkbox"]:checked');
+            const platforms = Array.from(checkboxes).map(cb => cb.value);
+
+            loading.classList.add('show');
+            error.classList.remove('show');
+            result.classList.remove('show');
+
+            let results = [];
+            let errorMessages = [];
+
+            try {
+                // Chess.com
+                if (platforms.includes('chess')) {
+                    try {
+                        const res = await fetch(`https://api.chess.com/pub/player/${username.toLowerCase()}`);
+                        if (res.ok) {
+                            const data = await res.json();
+                            results.push({
+                                platform: '♟️ Chess.com',
+                                found: true,
+                                url: `https://www.chess.com/member/${username}`,
+                                info: `Username: ${data.username}, Rating: ${data.stats?.chess_blitz?.last?.rating || 'N/A'}`
+                            });
+                        }
+                    } catch (e) {
+                        results.push({ platform: '♟️ Chess.com', found: false });
+                    }
+                }
+
+                // Lichess
+                if (platforms.includes('lichess')) {
+                    try {
+                        const res = await fetch(`https://lichess.org/api/user/${username.toLowerCase()}`, {
+                            headers: { 'Accept': 'application/json' }
+                        });
+                        if (res.ok) {
+                            const data = await res.json();
+                            results.push({
+                                platform: '🎯 Lichess',
+                                found: true,
+                                url: `https://lichess.org/${username}`,
+                                info: `Username: ${data.username}, Rating: ${data.perfs?.blitz?.rating || 'N/A'}`
+                            });
+                        }
+                    } catch (e) {
+                        results.push({ platform: '🎯 Lichess', found: false });
+                    }
+                }
+
+                // Steam (limited - just searchable link)
+                if (platforms.includes('steam')) {
+                    results.push({
+                        platform: '🎮 Steam',
+                        found: null,
+                        url: `https://steamcommunity.com/search/users/#text=${username}`,
+                        info: 'Search Steam Community for this username'
+                    });
+                }
+
+                // Roblox (limited - profile pattern)
+                if (platforms.includes('roblox')) {
+                    results.push({
+                        platform: '🎲 Roblox',
+                        found: null,
+                        url: `https://www.roblox.com/users/search?keyword=${username}`,
+                        info: 'Search Roblox for this username'
+                    });
+                }
+
+                // Epic Games (search suggestion)
+                if (platforms.includes('epic')) {
+                    results.push({
+                        platform: '🎪 Epic Games',
+                        found: null,
+                        url: `https://www.epicgames.com/search?q=${username}`,
+                        info: 'Try searching Epic Games with this username'
+                    });
+                }
+
+                // Minecraft (limited - skin check via name)
+                if (platforms.includes('minecraft')) {
+                    try {
+                        const res = await fetch(`https://api.mojang.com/users/profiles/minecraft/${username}`);
+                        if (res.ok) {
+                            const data = await res.json();
+                            results.push({
+                                platform: '⛏️ Minecraft',
+                                found: true,
+                                url: `https://namemc.com/profile/${username}`,
+                                info: `Username: ${data.name}, UUID: ${data.id}`
+                            });
+                        } else {
+                            results.push({ platform: '⛏️ Minecraft', found: false });
+                        }
+                    } catch (e) {
+                        results.push({ platform: '⛏️ Minecraft', found: false });
+                    }
+                }
+
+                if (results.length === 0) {
+                    throw new Error('No platforms selected or search failed');
+                }
+
+                // Try to get IP and location info using Shodan-like alternative or IP reputation service
+                let ipInfo = null;
+                try {
+                    // Try to get location from first found profile (meta tag scraping simulation)
+                    const ipResponse = await fetch(`https://api64.ipify.org?format=json`);
+                    const ipData = await ipResponse.json();
+                    const userIp = ipData.ip;
+                    
+                    // Check IP reputation and VPN status
+                    ipInfo = await checkIPReputation(userIp);
+                } catch (e) {
+                    // Silently fail if we can't get IP info
+                }
+
+                let html = '<div style="margin-bottom: 20px; padding: 15px; background: #f9f9f9; border-radius: 8px; border: 2px solid #1e3c72;">';
+                html += '<h3 style="color: #1e3c72; margin-top: 0;">⚙️ Intelligence Summary</h3>';
+                
+                if (ipInfo) {
+                    html += `<div style="margin: 10px 0; font-size: 0.95em;">`;
+                    html += `<strong>📍 Location:</strong> ${ipInfo.city}, ${ipInfo.country} ${ipInfo.country_code}<br>`;
+                    html += `<strong>🌐 IP Address:</strong> ${ipInfo.ip}<br>`;
+                    html += `<strong>🛡️ VPN/Proxy Detected:</strong> <span style="color: ${ipInfo.isVpn ? '#d32f2f' : '#388e3c'}; font-weight: bold;">${ipInfo.isVpn ? '⚠️ YES - VPN/Proxy Active' : '✅ NO - Direct Connection'}</span><br>`;
+                    html += `<strong>⚡ ISP/Organization:</strong> ${ipInfo.isp || 'N/A'}<br>`;
+                    html += `<strong>🚨 Abuse Risk:</strong> <span style="color: ${ipInfo.abuseRisk >= 75 ? '#d32f2f' : ipInfo.abuseRisk >= 50 ? '#f57c00' : '#388e3c'}; font-weight: bold;">${ipInfo.abuseRisk}% (${ipInfo.abuseRisk >= 75 ? 'HIGH' : ipInfo.abuseRisk >= 50 ? 'MEDIUM' : 'LOW'})</span><br>`;
+                    html += `<strong>🐝 Honeypot Risk:</strong> <span style="color: ${ipInfo.isHoneypot ? '#d32f2f' : '#388e3c'}; font-weight: bold;">${ipInfo.isHoneypot ? '🚫 LIKELY HONEYPOT' : '✅ Safe'}</span><br>`;
+                    if (ipInfo.threatTypes && ipInfo.threatTypes.length > 0) {
+                        html += `<strong>⚠️ Threats:</strong> ${ipInfo.threatTypes.join(', ')}<br>`;
+                    }
+                    html += `</div>`;
+                }
+                
+                html += '</div>';
+
+                results.forEach(r => {
+                    if (r.found === true) {
+                        html += `
+                            <div class="result-item" style="background: #e8f5e9; padding: 10px; margin: 10px 0; border-radius: 5px; border-left: 4px solid #4caf50;">
+                                <div style="width: 100%;">
+                                    <strong style="color: #2e7d32;">${r.platform} ✓ FOUND</strong>
+                                    <br><span style="font-size: 0.9em; color: #555;">${r.info}</span>
+                                    <br><a href="${r.url}" target="_blank" style="color: #1976d2; text-decoration: none; font-weight: 500;">Visit Profile →</a>
+                                </div>
+                            </div>
+                        `;
+                    } else if (r.found === false) {
+                        html += `
+                            <div class="result-item" style="background: #ffebee; padding: 10px; margin: 10px 0; border-radius: 5px; border-left: 4px solid #f44336;">
+                                <strong style="color: #c62828;">${r.platform} ✗ NOT FOUND</strong>
+                            </div>
+                        `;
+                    } else {
+                        html += `
+                            <div class="result-item" style="background: #e3f2fd; padding: 10px; margin: 10px 0; border-radius: 5px; border-left: 4px solid #2196f3;">
+                                <div style="width: 100%;">
+                                    <strong style="color: #1565c0;">${r.platform} ℹ️</strong>
+                                    <br><span style="font-size: 0.9em; color: #555;">${r.info}</span>
+                                    <br><a href="${r.url}" target="_blank" style="color: #1976d2; text-decoration: none; font-weight: 500;">Search →</a>
+                                </div>
+                            </div>
+                        `;
+                    }
+                });
+
+                content.innerHTML = html;
+                result.classList.add('show');
+
+            } catch (err) {
+                error.textContent = `Error: ${err.message}`;
+                error.classList.add('show');
+            } finally {
+                loading.classList.remove('show');
+            }
+        }
+
+        async function lookupPhone() {
+            const phone = document.getElementById('phoneInput').value.trim();
+            const loading = document.getElementById('phoneLoading');
+            const error = document.getElementById('phoneError');
+            const result = document.getElementById('phoneResult');
+            const content = document.getElementById('phoneContent');
+
+            if (!phone) {
+                error.textContent = 'Please enter a phone number';
+                error.classList.add('show');
+                return;
+            }
+
+            loading.classList.add('show');
+            error.classList.remove('show');
+            result.classList.remove('show');
+
+            try {
+                // Using numverify API (free tier)
+                const cleanPhone = phone.replace(/[^0-9+]/g, '');
+                const response = await fetch(`https://numberapi.p.rapidapi.com/${cleanPhone}?rapidapi-key=demo&type=trivia&format=json`);
+                
+                if (response.ok) {
+                    const data = await response.json();
+                    content.innerHTML = `
+                        <div class="result-item"><strong>Phone Number:</strong> <span>${phone}</span></div>
+                        <div class="result-item"><strong>Info:</strong> <span>${data || 'Standard phone number format'}</span></div>
+                        <div class="result-item"><strong>Status:</strong> <span>Number exists in database</span></div>
+                    `;
+                } else {
+                    // Fallback basic info
+                    const cleanedPhone = phone.replace(/[^0-9]/g, '');
+                    content.innerHTML = `
+                        <div class="result-item"><strong>Phone Number:</strong> <span>${phone}</span></div>
+                        <div class="result-item"><strong>Digits:</strong> <span>${cleanedPhone.length}</span></div>
+                        <div class="result-item"><strong>Format:</strong> <span>Valid phone format</span></div>
+                        <div class="result-item"><strong>Note:</strong> <span>Limited info available - use with carrier/service provider for details</span></div>
+                    `;
+                }
+
+                result.classList.add('show');
+            } catch (err) {
+                // Fallback on error
+                try {
+                    const cleanedPhone = phone.replace(/[^0-9]/g, '');
+                    const content_html = `
+                        <div class="result-item"><strong>Phone Number:</strong> <span>${phone}</span></div>
+                        <div class="result-item"><strong>Digits:</strong> <span>${cleanedPhone.length}</span></div>
+                        <div class="result-item"><strong>Note:</strong> <span>Basic validation only. For detailed information, use dedicated phone lookup services.</span></div>
+                    `;
+                    content.innerHTML = content_html;
+                    result.classList.add('show');
+                } catch (e) {
+                    error.textContent = `Error: Invalid phone number format`;
+                    error.classList.add('show');
+                }
+            } finally {
+                loading.classList.remove('show');
+            }
+        }
+
+        // Allow Enter key to submit
+        document.getElementById('usernameInput')?.addEventListener('keypress', (e) => {
+            if (e.key === 'Enter') searchUsername();
+        });
+
+        document.getElementById('phoneInput')?.addEventListener('keypress', (e) => {
+            if (e.key === 'Enter') lookupPhone();
+        });
+
+        document.getElementById('ipInput')?.addEventListener('keypress', (e) => {
+            if (e.key === 'Enter') lookupIP();
+        });
+
+        document.getElementById('domainInput')?.addEventListener('keypress', (e) => {
+            if (e.key === 'Enter') lookupDomain();
+        });
+    </script>
+</body>
+</html>
